@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doraemon AI Voice Assistant</title>
+<style>
+  body {
+    background: linear-gradient(to right, #a2d2ff, #bde0fe);
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    padding-top: 50px;
+  }
+  h1 {
+    color: #1a237e;
+    text-shadow: 2px 2px #ffffff;
+  }
+  #doraemon {
+    width: 180px;
+    transition: 0.3s;
+  }
+  .talking {
+    filter: drop-shadow(0 0 20px #2196f3);
+    transform: scale(1.05);
+  }
+  #micButton {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: 0.3s;
+  }
+  #micButton:hover {
+    background: #1976d2;
+    transform: scale(1.1);
+  }
+  #output {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #283593;
+    padding: 10px;
+  }
+  footer {
+    margin-top: 40px;
+    color: #1a237e;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎙️ Doraemon AI Voice Assistant</h1>
+<p>Click the mic and ask Doraemon anything!</p>
+
+<img id="doraemon" src="https://upload.wikimedia.org/wikipedia/en/0/0d/Doraemon_character.png" alt="Doraemon">
+<br><br>
+<button id="micButton">🎤</button>
+
+<div id="output">🟦 Waiting for your question...</div>
+
+<!-- Doraemon greeting & bye sounds -->
+<audio id="hiAudio" src="doraemon_hi.mp3"></audio>
+<audio id="byeAudio" src="doraemon_bye.mp3"></audio>
+
+<script>
+const GEMINI_API_KEY = "AIzaSyD39TZ_AHGGqqrv0rLVVw8vD3D-FtMCk0o"; // 🔑 Paste your Gemini API key here
+let firstClick = true;
+
+const micButton = document.getElementById("micButton");
+const doraemon = document.getElementById("doraemon");
+const output = document.getElementById("output");
+const hiAudio = document.getElementById("hiAudio");
+const byeAudio = document.getElementById("byeAudio");
+
+// 🎤 Speech recognition setup
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.lang = "en-US";
+recognition.continuous = false;
+
+// 🎧 Speak function (browser TTS)
+function speak(text) {
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.lang = "en-IN";
+  speech.pitch = 1.1;
+  speech.rate = 1;
+  window.speechSynthesis.speak(speech);
+}
+
+// 🧠 Offline responses
+function offlineReply(question) {
+  const q = question.toLowerCase();
+  if (q.includes("hi") || q.includes("hello")) return "Hi! I am Doraemon!";
+  if (q.includes("how are you")) return "I am feeling great today!";
+  if (q.includes("your name")) return "I am Doraemon, your friendly AI assistant!";
+  if (q.includes("what can you do")) return "I can talk with you, answer questions, and help you with fun tasks!";
+  if (q.includes("who made you")) return "I was made by Akshitha and her team!";
+  if (q.includes("bye")) return "I’ll be here whenever you need me! Bye bye!";
+  return "Hmm... I am not sure, but I will learn soon!";
+}
+
+// 🌐 Ask Gemini (AI Online Mode)
+async function askGemini(question) {
+  try {
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + GEMINI_API_KEY,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: question }] }]
+        })
+      }
+    );
+
+    const data = await res.json();
+    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error("No AI response");
+    }
+  } catch {
+    return offlineReply(question);
+  }
+}
+
+// 🎙️ Mic button action
+micButton.addEventListener("click", () => {
+  if (firstClick) {
+    hiAudio.play();
+    firstClick = false;
+  } else {
+    byeAudio.play();
+    firstClick = true;
+    return;
+  }
+
+  output.innerText = "🎧 Listening...";
+  doraemon.classList.add("talking");
+  recognition.start();
+
+  recognition.onresult = async (event) => {
+    const question = event.results[0][0].transcript;
+    output.innerText = "🟦 You said: " + question;
+
+    const reply = await askGemini(question);
+    output.innerText = "🤖 Doraemon: " + reply;
+    speak(reply);
+
+    doraemon.classList.remove("talking");
+  };
+
+  recognition.onerror = (err) => {
+    output.innerText = "⚠️ Error: " + err.error;
+    doraemon.classList.remove("talking");
+  };
+});
+</script>
+
+<footer>
+🎙️ Voice generated using <a href="https://www.fineshare.com/ai-voice/doraemon.html" target="_blank">Fineshare FineVoice</a><br>
+For educational/demo purposes only.
+</footer>
+
+<!--
+🎙️ Doraemon Voice Feature
+Voice generated using Fineshare FineVoice:
+https://www.fineshare.com/ai-voice/doraemon.html
+Used for educational/demo purpose only.
+-->
+</body>
+</html>
+
